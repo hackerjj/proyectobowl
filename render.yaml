@@ -18,8 +18,8 @@ services:
         sync: false            # MISMO valor que sushi-queen-backend
       - key: MONGO_DATABASE
         value: sushi_queen     # misma base; colecciones bowl_* propias
-      - key: BOWL_PIN
-        sync: false            # PIN para guardar desde la calculadora
+      - key: BOWL_USERS
+        sync: false            # "Jair:PIN,Andrea:PIN" — un PIN por persona
       - key: CORS_ALLOWED_ORIGINS
         value: "https://hackerjj.github.io,http://localhost:8080"
       - key: NODE_VERSION

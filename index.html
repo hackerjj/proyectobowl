@@ -60,12 +60,30 @@ table.m input.s{width:90px}
 dialog{border:1px solid var(--line);border-radius:14px;max-width:520px;width:92%;padding:18px}
 dialog::backdrop{background:rgba(0,0,0,.35)}
 .chk li{list-style:none;margin:4px 0}
+.ver-chip{font:600 12px/1 inherit;font-family:inherit;vertical-align:middle;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:10px;padding:4px 10px;margin-left:10px;cursor:pointer}
+.ver-chip:hover{background:#fff;color:var(--berry)}
+.cl-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;align-items:center;justify-content:center;padding:16px}
+.cl-backdrop.on{display:flex}
+.cl-modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.cl-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.cl-head h3{margin:0;font-size:17px}
+.cl-close{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted)}
+.cl-body{padding:14px 18px;overflow:auto;font-size:14px}
+.cl-ver{margin:0 0 16px}
+.cl-ver h4{font-size:14px;margin:0 0 4px;color:var(--berry)}
+.cl-ver h4 small{color:var(--muted);font-weight:500;margin-left:8px}
+.cl-ver ul{margin:4px 0 0 18px;padding:0}
+.cl-ver li{margin:4px 0}
+.cl-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-right:6px;vertical-align:middle}
+.cl-add{background:#e9f6ee;color:var(--ok);border:1px solid var(--ok)}
+.cl-fix{background:#fff4e0;color:var(--warn);border:1px solid var(--warn)}
+.cl-chg{background:#fdeee6;color:var(--brand);border:1px solid var(--brand)}
 @media (max-width:600px){header h1{font-size:21px} main{padding:10px}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Proyecto Bowl</h1>
+  <h1>Proyecto Bowl<button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.2</button></h1>
   <p>Dark kitchen de bowls de avena, yogurt y fruta, más café. Calculadora de costos y análisis de arranque.</p>
 </header>
 <nav>
@@ -203,15 +221,53 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   </section>
 </main>
 
+<div class="cl-backdrop" id="changelog" role="dialog" aria-modal="true" aria-labelledby="cl-title" onclick="if(event.target===this)toggleChangelog(false)">
+  <div class="cl-modal">
+    <div class="cl-head"><h3 id="cl-title">Historial de cambios</h3><button class="cl-close" onclick="toggleChangelog(false)" aria-label="Cerrar">&times;</button></div>
+    <div class="cl-body" id="changelog-body">
+      <div class="cl-ver">
+        <h4>v1.2 <small>27 oct 2026 · 14:16</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-add">NUEVO</span><strong>PIN personal</strong> para Jair y para Andrea. El sistema reconoce quién guarda por su PIN; ya no hay que escribir el nombre.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Indicador de <strong>sesión</strong> junto al estado ("Sesión: Jair" o "Sin sesión, solo lectura") y botón Cerrar sesión.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Chip de versión y este <strong>historial de cambios</strong>.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>Se quitó el PIN compartido del proyecto. El nombre de quien guarda lo pone el servidor, no el navegador.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>El PIN se valida contra el servidor al entrar; si es incorrecto, avisa en el mismo popup.</li>
+        </ul>
+      </div>
+      <div class="cl-ver">
+        <h4>v1.1 <small>27 oct 2026 · 14:09</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-add">NUEVO</span><strong>Backend en Render</strong> (proyectobowl-backend, Node) con los datos en el Mongo compartido de Sushi, aislados en las colecciones bowl_data y bowl_history.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span><strong>Historial de versiones</strong>: cada guardado respalda la versión anterior (hasta 100) y se puede restaurar como borrador.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Aviso de <strong>conflicto</strong> cuando dos personas guardan al mismo tiempo.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Aviso de "Despertando el servidor" y copia de respaldo si Render no responde.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>Guardar ya no escribe en GitHub ni pide token; usa la API de Render.</li>
+        </ul>
+      </div>
+      <div class="cl-ver">
+        <h4>v1.0 <small>27 oct 2026 · 12:40</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-add">NUEVO</span>Calculadora de costos y márgenes por producto: comisión de la app, IVA, retenciones de ISR e IVA, descuento, precio mínimo para el margen objetivo.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Proyección mensual: utilidad, pedidos al día para no perder y meses para recuperar los contenedores.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Insumos y recetas editables, con 5 bowls, 2 cafés y agua mineral de arranque.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Pestaña de análisis con el plan de arranque, impuestos, menú y operación.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Publicado en GitHub Pages.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 <dialog id="dlgToken">
-  <h2 style="margin-top:0">PIN para guardar</h2>
-  <p class="note">Ver la calculadora es libre. Para guardar cambios hace falta el PIN del proyecto. Se queda guardado solo en este navegador.</p>
+  <h2 style="margin-top:0">Tu PIN</h2>
+  <p class="note">Ver la calculadora es libre. Para guardar, cada quien usa su propio PIN y el sistema registra quién hizo el cambio. Se queda guardado solo en este navegador.</p>
   <label class="f">PIN<input type="password" id="tokIn" autocomplete="off"></label>
-  <label class="f" style="margin-top:8px">Tu nombre (aparece como "guardado por")<input id="nameIn" placeholder="Ej. Jair"></label>
+  <p class="note" id="tokWho"></p>
   <div class="bar" style="margin-top:14px;justify-content:flex-end">
-    <button class="btn alt" id="tokClear">Borrar PIN</button>
+    <button class="btn alt" id="tokClear">Cerrar sesión</button>
     <button class="btn alt" id="tokCancel">Cancelar</button>
-    <button class="btn" id="tokOk">Guardar PIN</button>
+    <button class="btn" id="tokOk">Entrar</button>
   </div>
 </dialog>
 
@@ -297,7 +353,8 @@ function markDirty() {
 function updateStatus() {
   const when = D.actualizado ? new Date(D.actualizado).toLocaleString("es-MX") : "sin fecha";
   $("#status").innerHTML = (dirty ? '<span class="neg">Cambios sin guardar</span> · ' : '<span class="pos">Al día</span> · ') +
-    `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}` + (offline ? ' · <span class="neg">sin conexión al servidor</span>' : "");
+    `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}` +
+    (localStorage.getItem(LS_TOKEN) ? ` · Sesión: <b>${esc(localStorage.getItem(LS_NAME) || "?")}</b>` : " · Sin sesión (solo lectura)") + (offline ? ' · <span class="neg">sin conexión al servidor</span>' : "");
 }
 
 async function save(force = false) {
@@ -309,7 +366,7 @@ async function save(force = false) {
     const r = await apiFetch(API, {
       method: "PUT",
       headers: {"Content-Type": "application/json", "X-Bowl-Pin": pin},
-      body: JSON.stringify({data: D, baseStamp: serverStamp, force: force === true, guardadoPor: localStorage.getItem(LS_NAME) || "Sin nombre"})
+      body: JSON.stringify({data: D, baseStamp: serverStamp, force: force === true})
     });
     const j = await r.json().catch(() => ({}));
     if (r.status === 409) {
@@ -334,18 +391,28 @@ async function save(force = false) {
 
 /* ---------- PIN ---------- */
 function openToken() {
-  $("#tokIn").value = localStorage.getItem(LS_TOKEN) || "";
-  $("#nameIn").value = localStorage.getItem(LS_NAME) || "";
+  $("#tokIn").value = "";
+  const n = localStorage.getItem(LS_NAME);
+  $("#tokWho").textContent = localStorage.getItem(LS_TOKEN) && n ? "Sesión actual: " + n : "";
   $("#dlgToken").showModal();
+  $("#tokIn").focus();
 }
-$("#tokOk").onclick = () => {
-  const t = $("#tokIn").value.trim(), n = $("#nameIn").value.trim();
-  if (t) localStorage.setItem(LS_TOKEN, t);
-  if (n) localStorage.setItem(LS_NAME, n);
-  $("#dlgToken").close(); msg("PIN guardado en este navegador.", "ok");
+$("#tokOk").onclick = async () => {
+  const t = $("#tokIn").value.trim();
+  if (!t) return;
+  const btn = $("#tokOk"); btn.disabled = true; $("#tokWho").textContent = "Verificando...";
+  try {
+    const r = await apiFetch(API_BASE + "/api/whoami", {headers: {"X-Bowl-Pin": t}});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { $("#tokWho").textContent = j.error || "PIN incorrecto"; return; }
+    localStorage.setItem(LS_TOKEN, t); localStorage.setItem(LS_NAME, j.nombre);
+    $("#dlgToken").close(); msg("Hola, " + j.nombre + ". Ya puedes guardar.", "ok"); updateStatus();
+  } catch (e) { $("#tokWho").textContent = "No se pudo conectar con el servidor. Intenta de nuevo."; }
+  finally { btn.disabled = false; }
 };
+$("#tokIn").addEventListener("keydown", e => { if (e.key === "Enter") $("#tokOk").click(); });
 $("#tokCancel").onclick = () => $("#dlgToken").close();
-$("#tokClear").onclick = () => { localStorage.removeItem(LS_TOKEN); $("#tokIn").value = ""; msg("PIN borrado de este navegador.", "ok"); };
+$("#tokClear").onclick = () => { localStorage.removeItem(LS_TOKEN); localStorage.removeItem(LS_NAME); $("#dlgToken").close(); msg("Sesión cerrada en este navegador.", "ok"); updateStatus(); };
 
 /* ---------- Historial ---------- */
 async function openHist() {
@@ -550,6 +617,9 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + b.dataset.tab));
 });
 window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+function toggleChangelog(on) { $("#changelog").classList.toggle("on", on); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") toggleChangelog(false); });
 
 load();
 </script>

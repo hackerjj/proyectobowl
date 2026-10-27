@@ -1,8 +1,11 @@
 // Proyecto Bowl - API mínima.
 // GET  /health         -> estado
 // GET  /api/data       -> versión actual (pública, solo lectura)
-// PUT  /api/data       -> guarda; requiere header X-Bowl-Pin = BOWL_PIN
+// GET  /api/whoami     -> a quién pertenece el PIN (requiere PIN)
+// PUT  /api/data       -> guarda; requiere header X-Bowl-Pin de un usuario
 // GET  /api/history    -> últimas versiones guardadas (requiere PIN)
+// Usuarios en BOWL_USERS con formato "Nombre:PIN,Nombre:PIN". El nombre de quien
+// guarda lo pone el servidor según el PIN, no el navegador.
 // Datos en el Mongo compartido con Sushi, aislados en bowl_data y bowl_history.
 
 const http = require("http");
@@ -14,14 +17,16 @@ const { MongoClient } = require("mongodb");
 const PORT = process.env.PORT || 10000;
 const MONGO_URI = process.env.MONGO_URI;
 const DB_NAME = process.env.MONGO_DATABASE || "sushi_queen";
-const PIN = process.env.BOWL_PIN || "";
+const USERS = (process.env.BOWL_USERS || "").split(",").map(s => s.trim()).filter(Boolean)
+  .map(s => { const i = s.indexOf(":"); return { name: s.slice(0, i).trim(), pin: s.slice(i + 1).trim() }; })
+  .filter(u => u.name && u.pin);
 const ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || "https://hackerjj.github.io")
   .split(",").map(s => s.trim()).filter(Boolean);
 const MAX_BODY = 256 * 1024;
 const HISTORY_KEEP = 100;
 
 if (!MONGO_URI) { console.error("Falta MONGO_URI"); process.exit(1); }
-if (PIN.length < 6) { console.error("BOWL_PIN debe tener al menos 6 caracteres"); process.exit(1); }
+if (!USERS.length || USERS.some(u => u.pin.length < 6)) { console.error("BOWL_USERS vacío o con PIN de menos de 6 caracteres"); process.exit(1); }
 
 const client = new MongoClient(MONGO_URI, { serverSelectionTimeoutMS: 10000 });
 let col, hist;
@@ -44,10 +49,24 @@ function noteFail(ip) {
   if (!f || Date.now() - f.first > WINDOW_MS) fails.set(ip, { first: Date.now(), count: 1 });
   else f.count++;
 }
-function pinOk(given) {
+// Devuelve el nombre del usuario dueño del PIN, o null. Compara contra todos en tiempo constante.
+function userFor(given) {
   const a = Buffer.from(String(given || ""));
-  const b = Buffer.from(PIN);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  let found = null;
+  for (const u of USERS) {
+    const b = Buffer.from(u.pin);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) found = u.name;
+  }
+  return found;
+}
+// Autentica la petición; responde 401/429 y devuelve null si no pasa.
+function auth(req, res) {
+  const ip = clientIp(req);
+  if (blocked(ip)) { send(res, 429, { error: "Demasiados intentos con PIN incorrecto. Espera 15 minutos." }); return null; }
+  const who = userFor(req.headers["x-bowl-pin"]);
+  if (!who) { noteFail(ip); send(res, 401, { error: "PIN incorrecto" }); return null; }
+  fails.delete(ip);
+  return who;
 }
 
 function cors(req, res) {
@@ -117,17 +136,19 @@ async function handle(req, res) {
     return send(res, 200, doc.data);
   }
 
+  if (url.pathname === "/api/whoami" && req.method === "GET") {
+    const who = auth(req, res); if (!who) return;
+    return send(res, 200, { nombre: who });
+  }
+
   if (url.pathname === "/api/data" && req.method === "PUT") {
-    const ip = clientIp(req);
-    if (blocked(ip)) return send(res, 429, { error: "Demasiados intentos con PIN incorrecto. Espera 15 minutos." });
-    if (!pinOk(req.headers["x-bowl-pin"])) { noteFail(ip); return send(res, 401, { error: "PIN incorrecto" }); }
-    fails.delete(ip);
+    const who = auth(req, res); if (!who) return;
 
     let body;
     try { body = JSON.parse(await readBody(req)); }
     catch (e) { return send(res, e.message === "too_large" ? 413 : 400, { error: "JSON inválido o demasiado grande" }); }
 
-    const { data, baseStamp, force, guardadoPor } = body || {};
+    const { data, baseStamp, force } = body || {};
     const err = validData(data);
     if (err) return send(res, 400, { error: "Datos inválidos: " + err });
 
@@ -137,7 +158,6 @@ async function handle(req, res) {
     }
 
     const stamp = new Date().toISOString();
-    const who = String(guardadoPor || "Sin nombre").slice(0, 40);
     data.actualizado = stamp;
     data.guardadoPor = who;
 
@@ -151,9 +171,7 @@ async function handle(req, res) {
   }
 
   if (url.pathname === "/api/history" && req.method === "GET") {
-    const ip = clientIp(req);
-    if (blocked(ip)) return send(res, 429, { error: "Demasiados intentos" });
-    if (!pinOk(req.headers["x-bowl-pin"])) { noteFail(ip); return send(res, 401, { error: "PIN incorrecto" }); }
+    if (!auth(req, res)) return;
     const items = await hist.find({}).sort({ archivado: -1 }).limit(30).toArray();
     return send(res, 200, items.map(h => ({ id: String(h._id), actualizado: h.actualizado, guardadoPor: h.guardadoPor, archivado: h.archivado, data: h.data })));
   }
