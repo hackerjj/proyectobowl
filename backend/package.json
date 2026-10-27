@@ -1,0 +1,12 @@
+{
+  "name": "proyectobowl-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API de Proyecto Bowl: guarda precios y recetas en Mongo (colecciones bowl_*).",
+  "main": "server.js",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "mongodb": "6.10.0"
+  }
+}

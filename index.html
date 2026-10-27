@@ -88,7 +88,9 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
       <button class="btn alt" id="btnReload">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Recargar del sitio</button>
       <button class="btn alt" id="btnToken">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg>Token</button>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>PIN</button>
+      <button class="btn alt" id="btnHist">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historial</button>
       <span class="status" id="status">Cargando...</span>
     </div>
   </div>
@@ -202,30 +204,32 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 </main>
 
 <dialog id="dlgToken">
-  <h2 style="margin-top:0">Token para guardar</h2>
-  <p class="note">El sitio es estático. Para guardar, la página escribe <code>data.json</code> en el repo usando la API de GitHub. Necesitas un token de acceso que solo tenga permiso sobre este repo.</p>
-  <ol class="note">
-    <li>Abre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>
-    <li>Repository access: <b>Only select repositories</b> y elige <b>proyectobowl</b>.</li>
-    <li>Permissions, Repository: <b>Contents: Read and write</b>. Nada más.</li>
-    <li>Genera el token y pégalo aquí. Se guarda solo en este navegador.</li>
-  </ol>
-  <label class="f">Token<input type="password" id="tokIn" placeholder="github_pat_..." autocomplete="off"></label>
+  <h2 style="margin-top:0">PIN para guardar</h2>
+  <p class="note">Ver la calculadora es libre. Para guardar cambios hace falta el PIN del proyecto. Se queda guardado solo en este navegador.</p>
+  <label class="f">PIN<input type="password" id="tokIn" autocomplete="off"></label>
   <label class="f" style="margin-top:8px">Tu nombre (aparece como "guardado por")<input id="nameIn" placeholder="Ej. Jair"></label>
   <div class="bar" style="margin-top:14px;justify-content:flex-end">
-    <button class="btn alt" id="tokClear">Borrar token</button>
+    <button class="btn alt" id="tokClear">Borrar PIN</button>
     <button class="btn alt" id="tokCancel">Cancelar</button>
-    <button class="btn" id="tokOk">Guardar token</button>
+    <button class="btn" id="tokOk">Guardar PIN</button>
   </div>
 </dialog>
 
+<dialog id="dlgHist" style="max-width:640px">
+  <h2 style="margin-top:0">Historial de versiones</h2>
+  <p class="note">Cada vez que alguien guarda, la versión anterior queda aquí. Restaurar carga esa versión como borrador; luego decides si la guardas.</p>
+  <div id="histList" class="scroll" style="max-height:60vh"></div>
+  <div class="bar" style="margin-top:14px;justify-content:flex-end"><button class="btn alt" id="histClose">Cerrar</button></div>
+</dialog>
+
 <script>
-const OWNER = "hackerjj", REPO = "proyectobowl", PATH = "data.json", BRANCH = "main";
-const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
-const LS_DRAFT = "pb-draft", LS_TOKEN = "pb-token", LS_NAME = "pb-name";
+const API_BASE = "https://proyectobowl-backend.onrender.com";
+const API = API_BASE + "/api/data";
+const LS_DRAFT = "pb-draft", LS_TOKEN = "pb-pin", LS_NAME = "pb-name";
 let D = null;          // estado actual
 let serverStamp = "";  // fecha de la versión del servidor
 let dirty = false;
+let offline = false;   // true si se cargó la copia estática por falla del backend
 
 const $ = s => document.querySelector(s);
 const money = n => (n < 0 ? "-" : "") + "$" + Math.abs(n).toLocaleString("es-MX", {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -238,23 +242,35 @@ function msg(text, type = "ok", ms = 4000) {
   if (ms) setTimeout(() => b.classList.remove("on"), ms);
 }
 
+// El plan free de Render se duerme; el primer request puede tardar ~1 minuto.
+async function apiFetch(url, opts = {}, timeoutMs = 90000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs);
+  try { return await fetch(url, {...opts, signal: ctl.signal, cache: "no-store"}); }
+  finally { clearTimeout(t); }
+}
+
 /* ---------- Carga y guardado ---------- */
 async function fetchServer() {
+  const slow = setTimeout(() => { $("#status").textContent = "Despertando el servidor (puede tardar hasta un minuto)..."; }, 3000);
   try {
-    const r = await fetch(API + "?ref=" + BRANCH + "&t=" + Date.now(), {headers: {Accept: "application/vnd.github.raw+json"}});
+    const r = await apiFetch(API);
     if (!r.ok) throw new Error("api " + r.status);
+    offline = false;
     return await r.json();
   } catch (e) {
+    offline = true;
     const r = await fetch("data.json?t=" + Date.now());
     return await r.json();
-  }
+  } finally { clearTimeout(slow); }
 }
 
 async function load(useDraft = true) {
   $("#status").textContent = "Cargando...";
   let server;
   try { server = await fetchServer(); }
-  catch (e) { msg("No se pudo leer data.json del sitio.", "err", 0); return; }
+  catch (e) { msg("No se pudieron cargar los datos.", "err", 0); return; }
+  if (offline) msg("El servidor no respondió. Estás viendo la copia inicial; no podrás guardar hasta que vuelva. Usa Recargar en un momento.", "warn", 0);
   serverStamp = server.actualizado || "";
   const draftRaw = localStorage.getItem(LS_DRAFT);
   const draft = draftRaw ? JSON.parse(draftRaw) : null;
@@ -281,44 +297,42 @@ function markDirty() {
 function updateStatus() {
   const when = D.actualizado ? new Date(D.actualizado).toLocaleString("es-MX") : "sin fecha";
   $("#status").innerHTML = (dirty ? '<span class="neg">Cambios sin guardar</span> · ' : '<span class="pos">Al día</span> · ') +
-    `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}`;
+    `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}` + (offline ? ' · <span class="neg">sin conexión al servidor</span>' : "");
 }
 
-function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
-
-async function save() {
-  const token = localStorage.getItem(LS_TOKEN);
-  if (!token) { openToken(); return; }
+async function save(force = false) {
+  const pin = localStorage.getItem(LS_TOKEN);
+  if (!pin) { openToken(); return; }
   const btn = $("#btnSave"); btn.disabled = true;
+  $("#status").textContent = "Guardando...";
   try {
-    const h = {Authorization: "Bearer " + token, Accept: "application/vnd.github+json"};
-    const cur = await fetch(API + "?ref=" + BRANCH + "&t=" + Date.now(), {headers: h});
-    if (cur.status === 401 || cur.status === 403) throw new Error("El token no tiene permiso. Revisa que sea del repo proyectobowl con Contents: Read and write.");
-    const curJ = await cur.json();
-    const remote = JSON.parse(decodeURIComponent(escape(atob(curJ.content.replace(/\n/g, "")))));
-    if (remote.actualizado && serverStamp && remote.actualizado !== serverStamp &&
-        !confirm(`Alguien guardó otra versión (${new Date(remote.actualizado).toLocaleString("es-MX")} por ${remote.guardadoPor}). ¿Sobrescribir con tus cambios?`)) {
-      btn.disabled = false; return;
+    const r = await apiFetch(API, {
+      method: "PUT",
+      headers: {"Content-Type": "application/json", "X-Bowl-Pin": pin},
+      body: JSON.stringify({data: D, baseStamp: serverStamp, force: force === true, guardadoPor: localStorage.getItem(LS_NAME) || "Sin nombre"})
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 409) {
+      updateStatus();
+      if (confirm(`Alguien guardó otra versión (${new Date(j.actualizado).toLocaleString("es-MX")} por ${j.guardadoPor}). ¿Sobrescribir con tus cambios? La versión de esa persona queda en el Historial.`)) {
+        btn.disabled = false; return save(true);
+      }
+      return;
     }
-    D.actualizado = new Date().toISOString();
-    D.guardadoPor = localStorage.getItem(LS_NAME) || "Sin nombre";
-    const body = {
-      message: `Actualiza precios (${D.guardadoPor})`,
-      content: b64(JSON.stringify(D, null, 2) + "\n"),
-      sha: curJ.sha, branch: BRANCH
-    };
-    const r = await fetch(API, {method: "PUT", headers: {...h, "Content-Type": "application/json"}, body: JSON.stringify(body)});
-    if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.message || ("Error " + r.status)); }
-    serverStamp = D.actualizado; dirty = false;
+    if (r.status === 401) { updateStatus(); msg("PIN incorrecto.", "err", 6000); openToken(); return; }
+    if (!r.ok) throw new Error(j.error || ("Error " + r.status));
+    D.actualizado = j.actualizado; D.guardadoPor = j.guardadoPor;
+    serverStamp = j.actualizado; dirty = false; offline = false;
     localStorage.removeItem(LS_DRAFT); $("#bDraft").classList.remove("on");
-    msg("Guardado en el sitio. Cualquiera que lo abra verá estos precios.", "ok");
+    msg("Guardado. Cualquiera que abra el sitio verá estos precios.", "ok");
     updateStatus();
   } catch (e) {
-    msg("No se pudo guardar: " + e.message, "err", 0);
+    updateStatus();
+    msg("No se pudo guardar: " + (e.name === "AbortError" ? "el servidor tardó demasiado, intenta de nuevo." : e.message) + " Tus cambios siguen guardados en este navegador.", "err", 0);
   } finally { btn.disabled = false; }
 }
 
-/* ---------- Token ---------- */
+/* ---------- PIN ---------- */
 function openToken() {
   $("#tokIn").value = localStorage.getItem(LS_TOKEN) || "";
   $("#nameIn").value = localStorage.getItem(LS_NAME) || "";
@@ -328,10 +342,32 @@ $("#tokOk").onclick = () => {
   const t = $("#tokIn").value.trim(), n = $("#nameIn").value.trim();
   if (t) localStorage.setItem(LS_TOKEN, t);
   if (n) localStorage.setItem(LS_NAME, n);
-  $("#dlgToken").close(); msg("Token guardado en este navegador.", "ok");
+  $("#dlgToken").close(); msg("PIN guardado en este navegador.", "ok");
 };
 $("#tokCancel").onclick = () => $("#dlgToken").close();
-$("#tokClear").onclick = () => { localStorage.removeItem(LS_TOKEN); $("#tokIn").value = ""; msg("Token borrado de este navegador.", "ok"); };
+$("#tokClear").onclick = () => { localStorage.removeItem(LS_TOKEN); $("#tokIn").value = ""; msg("PIN borrado de este navegador.", "ok"); };
+
+/* ---------- Historial ---------- */
+async function openHist() {
+  const pin = localStorage.getItem(LS_TOKEN);
+  if (!pin) { openToken(); return; }
+  $("#histList").innerHTML = '<p class="note">Cargando...</p>';
+  $("#dlgHist").showModal();
+  try {
+    const r = await apiFetch(API_BASE + "/api/history", {headers: {"X-Bowl-Pin": pin}});
+    if (r.status === 401) { $("#dlgHist").close(); msg("PIN incorrecto.", "err"); return; }
+    const items = await r.json();
+    if (!items.length) { $("#histList").innerHTML = '<p class="note">Todavía no hay versiones anteriores.</p>'; return; }
+    $("#histList").innerHTML = `<table><tr><th>Versión del</th><th>Guardada por</th><th>Reemplazada el</th><th></th></tr>` +
+      items.map((h, k) => `<tr><td>${esc(h.actualizado ? new Date(h.actualizado).toLocaleString("es-MX") : "?")}</td><td>${esc(h.guardadoPor)}</td><td>${esc(new Date(h.archivado).toLocaleString("es-MX"))}</td><td><button class="btn alt sm" data-h="${k}">Restaurar</button></td></tr>`).join("") + "</table>";
+    $("#histList").querySelectorAll("[data-h]").forEach(b => b.onclick = () => {
+      if (!confirm("¿Cargar esta versión como borrador? Reemplaza lo que ves ahora en pantalla.")) return;
+      D = items[b.dataset.h].data; markDirty(); renderAll();
+      $("#dlgHist").close(); msg("Versión cargada como borrador. Dale Guardar si quieres dejarla como la actual.", "warn", 8000);
+    });
+  } catch (e) { $("#histList").innerHTML = '<p class="note">No se pudo cargar el historial.</p>'; }
+}
+$("#histClose").onclick = () => $("#dlgHist").close();
 
 /* ---------- Cálculos ---------- */
 function unitCost(ins) { return ins.presentacion > 0 ? ins.precio / ins.presentacion : 0; }
@@ -502,7 +538,8 @@ $("#addProd").onclick = () => {
   D.productos.push({id: uid("p"), nombre: "Nuevo producto", precio: 139, activo: true, cantidades: {}});
   markDirty(); renderAll();
 };
-$("#btnSave").onclick = save;
+$("#btnSave").onclick = () => save();
+$("#btnHist").onclick = openHist;
 $("#btnToken").onclick = openToken;
 $("#btnReload").onclick = () => {
   if (dirty && !confirm("Tienes cambios sin guardar. ¿Descartarlos y cargar lo del sitio?")) return;
