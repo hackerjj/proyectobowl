@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proyecto Bowl · Calculadora y análisis</title>
+<style>
+:root{
+  --bg:#fffaf3; --card:#ffffff; --ink:#2b2420; --muted:#7a6e66; --line:#eadfd3;
+  --brand:#e8743b; --brand2:#7bb661; --berry:#b8336a; --ok:#2e8b57; --bad:#c0392b; --warn:#d68910;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+.ico{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;margin-right:4px}
+header{background:linear-gradient(120deg,var(--brand),var(--berry));color:#fff;padding:22px 20px}
+header h1{margin:0;font-size:26px}
+header p{margin:4px 0 0;opacity:.92}
+nav{display:flex;gap:6px;padding:10px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+nav button{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:14px;color:var(--ink)}
+nav button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+main{max-width:1200px;margin:0 auto;padding:18px}
+section.tab{display:none} section.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:18px}
+.card h3{margin:14px 0 6px;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:3px}
+input,select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+input:focus{outline:2px solid var(--brand);outline-offset:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:middle}
+th{background:#fbf3ea;font-weight:600;white-space:nowrap}
+td.n,th.n{text-align:right;white-space:nowrap}
+table.m input{width:72px;text-align:right;padding:4px}
+table.m input.w{width:170px;text-align:left}
+table.m input.s{width:90px}
+.btn{border:0;border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer;background:var(--ink);color:#fff;display:inline-flex;align-items:center}
+.btn.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.brand{background:var(--brand)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:default}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.status{font-size:13px;color:var(--muted)}
+.banner{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:14px;display:none}
+.banner.on{display:block}
+.banner.warn{background:#fff4e0;border:1px solid #f3cf8e}
+.banner.ok{background:#e9f6ee;border:1px solid #a8d8b9}
+.banner.err{background:#fdecea;border:1px solid #f1a9a0}
+.pos{color:var(--ok);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;background:#eee}
+.pill.off{background:#f6dcdc;color:#8a2a2a}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fffdf9}
+.kpi b{display:block;font-size:22px}
+.kpi span{font-size:12px;color:var(--muted)}
+.note{font-size:12px;color:var(--muted)}
+.prose p,.prose li{font-size:15px}
+.prose table{font-size:14px;margin:8px 0}
+dialog{border:1px solid var(--line);border-radius:14px;max-width:520px;width:92%;padding:18px}
+dialog::backdrop{background:rgba(0,0,0,.35)}
+.chk li{list-style:none;margin:4px 0}
+@media (max-width:600px){header h1{font-size:21px} main{padding:10px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Proyecto Bowl</h1>
+  <p>Dark kitchen de bowls de avena, yogurt y fruta, más café. Calculadora de costos y análisis de arranque.</p>
+</header>
+<nav>
+  <button data-tab="calc" class="on">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2"/></svg>Calculadora</button>
+  <button data-tab="insumos">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-2 13H5L3 7zM8 7V5a4 4 0 0 1 8 0v2"/></svg>Insumos y recetas</button>
+  <button data-tab="analisis">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-6"/></svg>Análisis</button>
+</nav>
+
+<main>
+  <div id="bDraft" class="banner warn"></div>
+  <div id="bMsg" class="banner"></div>
+
+  <div class="card">
+    <div class="bar">
+      <button class="btn brand" id="btnSave">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7"/></svg>Guardar en el sitio</button>
+      <button class="btn alt" id="btnReload">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Recargar del sitio</button>
+      <button class="btn alt" id="btnToken">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3"/></svg>Token</button>
+      <span class="status" id="status">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- CALCULADORA -->
+  <section class="tab on" id="tab-calc">
+    <div class="card">
+      <h2>Parámetros de venta e impuestos</h2>
+      <div class="grid" id="params"></div>
+      <p class="note">La comisión se calcula sobre el precio cobrado. El descuento es el que absorbe el negocio. Las retenciones de ISR e IVA se calculan sobre el precio sin IVA. Estos porcentajes son estimados; confírmalos con el contrato de cada app y con el contador.</p>
+    </div>
+
+    <div class="card">
+      <h2>Proyección mensual</h2>
+      <div class="kpis" id="kpis"></div>
+    </div>
+
+    <div class="card">
+      <h2>Margen por producto</h2>
+      <div class="scroll"><table id="tblRes"></table></div>
+      <p class="note">"Precio mínimo" es el precio de lista necesario para llegar al margen objetivo con el descuento actual. "Sin promo" ignora el descuento.</p>
+    </div>
+  </section>
+
+  <!-- INSUMOS -->
+  <section class="tab" id="tab-insumos">
+    <div class="card">
+      <h2>Insumos (precios de compra)</h2>
+      <p class="note">Captura el precio del paquete y su contenido. El costo por unidad se calcula solo.</p>
+      <div class="scroll"><table class="m" id="tblIns"></table></div>
+      <div class="bar" style="margin-top:10px"><button class="btn alt sm" id="addIns">+ Agregar insumo</button></div>
+    </div>
+    <div class="card">
+      <h2>Productos y recetas</h2>
+      <p class="note">Cada columna es un producto. Pon la cantidad de cada insumo por porción (gramos, mililitros o piezas, según la unidad del insumo). Desmarca "Activo" para mostrarlo como agotado.</p>
+      <div class="scroll"><table class="m" id="tblRec"></table></div>
+      <div class="bar" style="margin-top:10px"><button class="btn alt sm" id="addProd">+ Agregar producto</button></div>
+    </div>
+  </section>
+
+  <!-- ANALISIS -->
+  <section class="tab prose" id="tab-analisis">
+    <div class="card">
+      <h2>1. El plan, en orden de dependencia</h2>
+      <ol>
+        <li><b>SAT.</b> Actualizar obligaciones a RESICO y sacar la Constancia de Situación Fiscal (CSF). Sin CSF no hay Uber ni Rappi.</li>
+        <li><b>Nombre y logo.</b> Antes de dar de alta las apps.</li>
+        <li><b>Costeo y precios.</b> Con esta calculadora, antes de subir el menú.</li>
+        <li><b>Fotos reales.</b> Cuando lleguen los contenedores el jueves.</li>
+        <li><b>Alta en Uber Eats y Rappi.</b> CSF, INE, CLABE, menú y fotos.</li>
+        <li><b>Café y bebidas.</b> Complemento para subir el ticket.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>2. Impuestos</h2>
+      <ul>
+        <li><b>RESICO no es un 2% fijo.</b> Es escalonado según lo que vendas al mes: 1% hasta ~$25k, 1.1% hasta ~$50k, 1.5% hasta ~$83k y 2% hasta ~$208k. Al arranque probablemente sea 1%. Las declaraciones son mensuales y luego viene la anual.</li>
+        <li><b>El IVA no desaparece.</b> La comida preparada paga 16%. La plataforma retiene la mitad (8%) y el resto se declara, restando el IVA de la comisión.</li>
+        <li><b>Retención de ISR de la plataforma:</b> alrededor de 1% en venta de bienes. Si no das RFC, la retención sube a 20%. Por eso la CSF va primero.</li>
+        <li><b>Confirmar con contador:</b> el régimen correcto de quien ya es asimilado a salarios, y que el alta quede bien. Es una consulta corta que evita un error caro.</li>
+        <li><b>Trámite:</b> con e.firma vigente se hace en línea el mismo día. Sin e.firma hace falta cita en el SAT, y eso mueve la fecha de arranque.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>3. Números de la plática que no cuadran</h2>
+      <ul>
+        <li>"Ticket promedio de $500 con 3 bowls": 3 × $120 son $360. Un ticket realista es de $150 a $250.</li>
+        <li>"60 a 80 diarios desde el primer mes": es optimista para una dark kitchen sin reseñas. Conviene planear con 5 a 15 pedidos al día el primer mes y ajustar con datos reales.</li>
+        <li>A $120 con 30% de comisión y retenciones, quedan unos $25 por bowl. Si además se da un descuento de 30 a 35%, se pierde dinero en cada venta. Por eso la calculadora arranca con precios de $139 a $149.</li>
+        <li>El gasto fuerte no es la avena. Son el yogurt y la fruta.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>4. Arranque del viernes 30 de octubre</h2>
+      <p>Los contenedores llegan el jueves, pero la verificación de Uber Eats suele tardar días o semanas. Propuesta:</p>
+      <ul>
+        <li><b>Viernes:</b> arranque suave por WhatsApp, Instagram y recoger en mostrador. Sirve para probar recetas, tiempos y fotos.</li>
+        <li><b>En paralelo:</b> alta en Uber y Rappi, para entrar en cuanto aprueben.</li>
+        <li><b>Fotos:</b> del producto real, con luz natural. Las imágenes bajadas de internet tienen derechos de autor y las apps piden que la foto sea el producto que se entrega. La IA sirve para el logo, no para el platillo.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>5. Menú y nombre</h2>
+      <ul>
+        <li><b>Tropi Bowl:</b> plátano y coco rallado ("Tropi" mejor que "Trophy", que en inglés es trofeo).</li>
+        <li><b>Berry Bowl:</b> fresa y mora.</li>
+        <li><b>Apple Pie Bowl:</b> manzana, canela y avena caliente.</li>
+        <li><b>Choco Banana Bowl.</b></li>
+        <li><b>De temporada:</b> mango, uva o pera, marcado como agotado cuando no haya.</li>
+        <li>Granola o topping crujiente en bolsita aparte para que no se humedezca.</li>
+      </ul>
+      <p>Antes de imprimir nada, buscar el nombre en Uber Eats CDMX y en el IMPI (marcanet.impi.gob.mx). "Fruity Bowls" es genérico y es probable que ya exista.</p>
+    </div>
+
+    <div class="card">
+      <h2>6. Operación y producto fresco</h2>
+      <ul>
+        <li>Plátano en poca cantidad cada 2 o 3 días; no aguanta congelado como topping.</li>
+        <li>Fresas y moras duran alrededor de una semana en refrigeración.</li>
+        <li>Avena remojada desde la noche anterior, por tandas, para despachar rápido.</li>
+        <li>Promociones en la app solo las primeras 2 a 4 semanas y con tope de presupuesto.</li>
+        <li>Aviso de funcionamiento y prácticas de higiene de la NOM-251 para preparar alimentos a la venta.</li>
+        <li>Contenedores: 300 piezas con tapa por $1,746 (≈ $5.82 cada uno). La inversión se registra como préstamo al negocio a 3 meses.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<dialog id="dlgToken">
+  <h2 style="margin-top:0">Token para guardar</h2>
+  <p class="note">El sitio es estático. Para guardar, la página escribe <code>data.json</code> en el repo usando la API de GitHub. Necesitas un token de acceso que solo tenga permiso sobre este repo.</p>
+  <ol class="note">
+    <li>Abre <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>
+    <li>Repository access: <b>Only select repositories</b> y elige <b>proyectobowl</b>.</li>
+    <li>Permissions, Repository: <b>Contents: Read and write</b>. Nada más.</li>
+    <li>Genera el token y pégalo aquí. Se guarda solo en este navegador.</li>
+  </ol>
+  <label class="f">Token<input type="password" id="tokIn" placeholder="github_pat_..." autocomplete="off"></label>
+  <label class="f" style="margin-top:8px">Tu nombre (aparece como "guardado por")<input id="nameIn" placeholder="Ej. Jair"></label>
+  <div class="bar" style="margin-top:14px;justify-content:flex-end">
+    <button class="btn alt" id="tokClear">Borrar token</button>
+    <button class="btn alt" id="tokCancel">Cancelar</button>
+    <button class="btn" id="tokOk">Guardar token</button>
+  </div>
+</dialog>
+
+<script>
+const OWNER = "hackerjj", REPO = "proyectobowl", PATH = "data.json", BRANCH = "main";
+const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`;
+const LS_DRAFT = "pb-draft", LS_TOKEN = "pb-token", LS_NAME = "pb-name";
+let D = null;          // estado actual
+let serverStamp = "";  // fecha de la versión del servidor
+let dirty = false;
+
+const $ = s => document.querySelector(s);
+const money = n => (n < 0 ? "-" : "") + "$" + Math.abs(n).toLocaleString("es-MX", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const num = v => { const x = parseFloat(v); return isFinite(x) ? x : 0; };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = p => p + Math.random().toString(36).slice(2, 7);
+
+function msg(text, type = "ok", ms = 4000) {
+  const b = $("#bMsg"); b.className = "banner on " + type; b.textContent = text;
+  if (ms) setTimeout(() => b.classList.remove("on"), ms);
+}
+
+/* ---------- Carga y guardado ---------- */
+async function fetchServer() {
+  try {
+    const r = await fetch(API + "?ref=" + BRANCH + "&t=" + Date.now(), {headers: {Accept: "application/vnd.github.raw+json"}});
+    if (!r.ok) throw new Error("api " + r.status);
+    return await r.json();
+  } catch (e) {
+    const r = await fetch("data.json?t=" + Date.now());
+    return await r.json();
+  }
+}
+
+async function load(useDraft = true) {
+  $("#status").textContent = "Cargando...";
+  let server;
+  try { server = await fetchServer(); }
+  catch (e) { msg("No se pudo leer data.json del sitio.", "err", 0); return; }
+  serverStamp = server.actualizado || "";
+  const draftRaw = localStorage.getItem(LS_DRAFT);
+  const draft = draftRaw ? JSON.parse(draftRaw) : null;
+  if (useDraft && draft && draft.data) {
+    D = draft.data; dirty = true;
+    const b = $("#bDraft");
+    b.innerHTML = `Tienes cambios sin guardar en este dispositivo (${esc(new Date(draft.at).toLocaleString("es-MX"))}). ` +
+      `<button class="btn sm" id="dSave">Guardar en el sitio</button> <button class="btn alt sm" id="dDiscard">Descartar y usar lo del sitio</button>`;
+    b.classList.add("on");
+    $("#dSave").onclick = save;
+    $("#dDiscard").onclick = () => { localStorage.removeItem(LS_DRAFT); $("#bDraft").classList.remove("on"); load(false); };
+  } else {
+    D = server; dirty = false; $("#bDraft").classList.remove("on");
+  }
+  renderAll();
+}
+
+function markDirty() {
+  dirty = true;
+  localStorage.setItem(LS_DRAFT, JSON.stringify({at: new Date().toISOString(), data: D}));
+  updateStatus();
+}
+
+function updateStatus() {
+  const when = D.actualizado ? new Date(D.actualizado).toLocaleString("es-MX") : "sin fecha";
+  $("#status").innerHTML = (dirty ? '<span class="neg">Cambios sin guardar</span> · ' : '<span class="pos">Al día</span> · ') +
+    `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}`;
+}
+
+function b64(str) { return btoa(unescape(encodeURIComponent(str))); }
+
+async function save() {
+  const token = localStorage.getItem(LS_TOKEN);
+  if (!token) { openToken(); return; }
+  const btn = $("#btnSave"); btn.disabled = true;
+  try {
+    const h = {Authorization: "Bearer " + token, Accept: "application/vnd.github+json"};
+    const cur = await fetch(API + "?ref=" + BRANCH + "&t=" + Date.now(), {headers: h});
+    if (cur.status === 401 || cur.status === 403) throw new Error("El token no tiene permiso. Revisa que sea del repo proyectobowl con Contents: Read and write.");
+    const curJ = await cur.json();
+    const remote = JSON.parse(decodeURIComponent(escape(atob(curJ.content.replace(/\n/g, "")))));
+    if (remote.actualizado && serverStamp && remote.actualizado !== serverStamp &&
+        !confirm(`Alguien guardó otra versión (${new Date(remote.actualizado).toLocaleString("es-MX")} por ${remote.guardadoPor}). ¿Sobrescribir con tus cambios?`)) {
+      btn.disabled = false; return;
+    }
+    D.actualizado = new Date().toISOString();
+    D.guardadoPor = localStorage.getItem(LS_NAME) || "Sin nombre";
+    const body = {
+      message: `Actualiza precios (${D.guardadoPor})`,
+      content: b64(JSON.stringify(D, null, 2) + "\n"),
+      sha: curJ.sha, branch: BRANCH
+    };
+    const r = await fetch(API, {method: "PUT", headers: {...h, "Content-Type": "application/json"}, body: JSON.stringify(body)});
+    if (!r.ok) { const t = await r.json().catch(() => ({})); throw new Error(t.message || ("Error " + r.status)); }
+    serverStamp = D.actualizado; dirty = false;
+    localStorage.removeItem(LS_DRAFT); $("#bDraft").classList.remove("on");
+    msg("Guardado en el sitio. Cualquiera que lo abra verá estos precios.", "ok");
+    updateStatus();
+  } catch (e) {
+    msg("No se pudo guardar: " + e.message, "err", 0);
+  } finally { btn.disabled = false; }
+}
+
+/* ---------- Token ---------- */
+function openToken() {
+  $("#tokIn").value = localStorage.getItem(LS_TOKEN) || "";
+  $("#nameIn").value = localStorage.getItem(LS_NAME) || "";
+  $("#dlgToken").showModal();
+}
+$("#tokOk").onclick = () => {
+  const t = $("#tokIn").value.trim(), n = $("#nameIn").value.trim();
+  if (t) localStorage.setItem(LS_TOKEN, t);
+  if (n) localStorage.setItem(LS_NAME, n);
+  $("#dlgToken").close(); msg("Token guardado en este navegador.", "ok");
+};
+$("#tokCancel").onclick = () => $("#dlgToken").close();
+$("#tokClear").onclick = () => { localStorage.removeItem(LS_TOKEN); $("#tokIn").value = ""; msg("Token borrado de este navegador.", "ok"); };
+
+/* ---------- Cálculos ---------- */
+function unitCost(ins) { return ins.presentacion > 0 ? ins.precio / ins.presentacion : 0; }
+
+function productCost(p) {
+  let c = 0;
+  for (const ins of D.insumos) c += unitCost(ins) * num(p.cantidades[ins.id]);
+  return c;
+}
+
+// Neto que recibe el negocio después de comisión e impuestos, para un precio de lista
+function breakdown(precioLista, desc) {
+  const P = D.params;
+  const cobrado = precioLista * (1 - desc / 100);
+  const base = cobrado / (1 + P.iva / 100);
+  const ivaCobrado = cobrado - base;
+  const comision = cobrado * P.comision / 100;
+  const ivaCom = P.ivaSobreComision ? comision * P.iva / 100 : 0;
+  const retIsr = base * P.retIsr / 100;
+  const retIva = base * P.retIva / 100;
+  const ivaPagar = Math.max(0, ivaCobrado - retIva - ivaCom);
+  const neto = cobrado - comision - ivaCom - retIsr - retIva - ivaPagar;
+  return {cobrado, comision: comision + ivaCom, impuestos: retIsr + retIva + ivaPagar, neto};
+}
+
+function minPrice(costo, desc) {
+  const m = D.params.margenObjetivo / 100;
+  let lo = 0, hi = 5000;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    const b = breakdown(mid, desc);
+    (b.neto - costo >= m * mid) ? hi = mid : lo = mid;
+  }
+  return hi >= 4999 ? NaN : Math.ceil(hi);
+}
+
+/* ---------- Render ---------- */
+const PARAMS = [
+  ["comision", "Comisión de la app (%)"],
+  ["iva", "IVA (%)"],
+  ["retIsr", "Retención ISR (%)"],
+  ["retIva", "Retención IVA (%)"],
+  ["descuento", "Descuento / promo (%)"],
+  ["margenObjetivo", "Margen objetivo (% del precio)"],
+  ["pedidosDia", "Pedidos por día"],
+  ["productosPorPedido", "Productos por pedido"],
+  ["diasMes", "Días de venta al mes"],
+  ["gastosFijos", "Gastos fijos al mes ($, publicidad, gas, etc.)"]
+];
+
+function renderParams() {
+  const P = D.params;
+  $("#params").innerHTML = PARAMS.map(([k, l]) =>
+    `<label class="f">${l}<input type="number" step="any" data-p="${k}" value="${esc(P[k])}"></label>`).join("") +
+    `<label class="f">IVA sobre la comisión<select data-p="ivaSobreComision"><option value="1"${P.ivaSobreComision ? " selected" : ""}>Sí</option><option value="0"${!P.ivaSobreComision ? " selected" : ""}>No</option></select></label>`;
+  $("#params").querySelectorAll("[data-p]").forEach(el => el.oninput = () => {
+    const k = el.dataset.p;
+    D.params[k] = k === "ivaSobreComision" ? el.value === "1" : num(el.value);
+    markDirty(); renderResults();
+  });
+}
+
+function renderResults() {
+  const P = D.params, rows = [];
+  let sumM = 0, n = 0;
+  for (const p of D.productos) {
+    const costo = productCost(p);
+    const b = breakdown(p.precio, P.descuento);
+    const b0 = breakdown(p.precio, 0);
+    const mg = b.neto - costo, mg0 = b0.neto - costo;
+    const pct = b.cobrado > 0 ? mg / p.precio * 100 : 0;
+    if (p.activo) { sumM += mg; n++; }
+    rows.push(`<tr>
+      <td>${esc(p.nombre)} ${p.activo ? "" : '<span class="pill off">agotado</span>'}</td>
+      <td class="n">${money(p.precio)}</td>
+      <td class="n">${money(costo)}</td>
+      <td class="n">${money(b.cobrado)}</td>
+      <td class="n">${money(b.comision)}</td>
+      <td class="n">${money(b.impuestos)}</td>
+      <td class="n">${money(b.neto)}</td>
+      <td class="n ${mg >= 0 ? "pos" : "neg"}">${money(mg)}</td>
+      <td class="n ${pct >= P.margenObjetivo ? "pos" : pct >= 0 ? "" : "neg"}">${pct.toFixed(1)}%</td>
+      <td class="n ${mg0 >= 0 ? "pos" : "neg"}">${money(mg0)}</td>
+      <td class="n">${isNaN(minPrice(costo, P.descuento)) ? "n/a" : money(minPrice(costo, P.descuento))}</td>
+    </tr>`);
+  }
+  $("#tblRes").innerHTML = `<tr><th>Producto</th><th class="n">Precio lista</th><th class="n">Costo</th><th class="n">Cobrado</th><th class="n">Comisión + IVA</th><th class="n">Impuestos</th><th class="n">Te llega</th><th class="n">Margen</th><th class="n">Margen %</th><th class="n">Margen sin promo</th><th class="n">Precio mínimo</th></tr>` + rows.join("");
+
+  const avg = n ? sumM / n : 0;
+  const unidades = P.pedidosDia * P.productosPorPedido * P.diasMes;
+  const bruto = avg * unidades;
+  const neto = bruto - P.gastosFijos;
+  const be = avg > 0 ? Math.ceil(P.gastosFijos / avg / P.diasMes / Math.max(P.productosPorPedido, 0.01)) : NaN;
+  const cont = D.insumos.find(i => i.id === "contenedor");
+  const inversion = cont ? cont.precio : 0;
+  const mesesPago = neto > 0 ? inversion / neto : NaN;
+  $("#kpis").innerHTML = [
+    [money(avg), "Margen promedio por producto activo"],
+    [Math.round(unidades).toLocaleString("es-MX"), "Productos vendidos al mes"],
+    [money(bruto), "Margen bruto al mes"],
+    [`<span class="${neto >= 0 ? "pos" : "neg"}">${money(neto)}</span>`, "Utilidad al mes (después de gastos fijos)"],
+    [isNaN(be) ? "n/a" : be + " / día", "Pedidos al día para no perder"],
+    [isNaN(mesesPago) ? "n/a" : mesesPago.toFixed(1) + " meses", `Recuperar contenedores (${money(inversion)})`]
+  ].map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+}
+
+function renderInsumos() {
+  $("#tblIns").innerHTML = `<tr><th>Insumo</th><th>Unidad</th><th class="n">Contenido del paquete</th><th class="n">Precio del paquete</th><th class="n">Costo por unidad</th><th></th></tr>` +
+    D.insumos.map((i, k) => `<tr>
+      <td><input class="w" data-i="${k}" data-f="nombre" value="${esc(i.nombre)}"></td>
+      <td><select data-i="${k}" data-f="unidad" style="width:70px">${["g", "ml", "pza"].map(u => `<option${u === i.unidad ? " selected" : ""}>${u}</option>`).join("")}</select></td>
+      <td class="n"><input class="s" type="number" step="any" data-i="${k}" data-f="presentacion" value="${i.presentacion}"></td>
+      <td class="n"><input class="s" type="number" step="any" data-i="${k}" data-f="precio" value="${i.precio}"></td>
+      <td class="n" id="uc-${k}">${money(unitCost(i))} / ${esc(i.unidad)}</td>
+      <td><button class="btn alt sm" data-del="${k}" aria-label="Eliminar ${esc(i.nombre)}">Quitar</button></td>
+    </tr>`).join("");
+  $("#tblIns").querySelectorAll("[data-f]").forEach(el => el.oninput = () => {
+    const i = D.insumos[el.dataset.i], f = el.dataset.f;
+    i[f] = (f === "nombre" || f === "unidad") ? el.value : num(el.value);
+    $("#uc-" + el.dataset.i).textContent = money(unitCost(i)) + " / " + i.unidad;
+    markDirty(); renderResults();
+    if (f === "nombre" || f === "unidad") renderRecetas();
+  });
+  $("#tblIns").querySelectorAll("[data-del]").forEach(el => el.onclick = () => {
+    const i = D.insumos[el.dataset.del];
+    if (!confirm(`¿Quitar "${i.nombre}"? Se borra de todas las recetas.`)) return;
+    D.insumos.splice(el.dataset.del, 1);
+    D.productos.forEach(p => delete p.cantidades[i.id]);
+    markDirty(); renderAll();
+  });
+}
+
+function renderRecetas() {
+  const ps = D.productos;
+  let h = `<tr><th>Insumo</th>${ps.map((p, k) => `<th><input class="w" style="width:140px" data-pn="${k}" value="${esc(p.nombre)}"></th>`).join("")}</tr>`;
+  h += `<tr><th>Precio de venta</th>${ps.map((p, k) => `<td><input type="number" step="any" data-pp="${k}" value="${p.precio}"></td>`).join("")}</tr>`;
+  h += `<tr><th>Activo</th>${ps.map((p, k) => `<td><input type="checkbox" style="width:auto" data-pa="${k}"${p.activo ? " checked" : ""}> <button class="btn alt sm" data-pd="${k}">Quitar</button></td>`).join("")}</tr>`;
+  for (const ins of D.insumos) {
+    h += `<tr><td>${esc(ins.nombre)} <span class="note">(${esc(ins.unidad)})</span></td>${ps.map((p, k) =>
+      `<td><input type="number" step="any" min="0" data-q="${k}" data-ins="${esc(ins.id)}" value="${p.cantidades[ins.id] ?? ""}" placeholder="0"></td>`).join("")}</tr>`;
+  }
+  h += `<tr><th>Costo por porción</th>${ps.map((p, k) => `<td class="n" id="pc-${k}"><b>${money(productCost(p))}</b></td>`).join("")}</tr>`;
+  $("#tblRec").innerHTML = h;
+  const t = $("#tblRec");
+  t.querySelectorAll("[data-pn]").forEach(el => el.oninput = () => { ps[el.dataset.pn].nombre = el.value; markDirty(); renderResults(); });
+  t.querySelectorAll("[data-pp]").forEach(el => el.oninput = () => { ps[el.dataset.pp].precio = num(el.value); markDirty(); renderResults(); });
+  t.querySelectorAll("[data-pa]").forEach(el => el.onchange = () => { ps[el.dataset.pa].activo = el.checked; markDirty(); renderResults(); });
+  t.querySelectorAll("[data-pd]").forEach(el => el.onclick = () => {
+    if (!confirm(`¿Quitar "${ps[el.dataset.pd].nombre}"?`)) return;
+    ps.splice(el.dataset.pd, 1); markDirty(); renderAll();
+  });
+  t.querySelectorAll("[data-q]").forEach(el => el.oninput = () => {
+    const p = ps[el.dataset.q];
+    if (el.value === "" || num(el.value) === 0) delete p.cantidades[el.dataset.ins];
+    else p.cantidades[el.dataset.ins] = num(el.value);
+    $("#pc-" + el.dataset.q).innerHTML = "<b>" + money(productCost(p)) + "</b>";
+    markDirty(); renderResults();
+  });
+}
+
+function renderAll() { renderParams(); renderResults(); renderInsumos(); renderRecetas(); updateStatus(); }
+
+$("#addIns").onclick = () => {
+  D.insumos.push({id: uid("i"), nombre: "Nuevo insumo", unidad: "g", presentacion: 1000, precio: 0});
+  markDirty(); renderAll();
+};
+$("#addProd").onclick = () => {
+  D.productos.push({id: uid("p"), nombre: "Nuevo producto", precio: 139, activo: true, cantidades: {}});
+  markDirty(); renderAll();
+};
+$("#btnSave").onclick = save;
+$("#btnToken").onclick = openToken;
+$("#btnReload").onclick = () => {
+  if (dirty && !confirm("Tienes cambios sin guardar. ¿Descartarlos y cargar lo del sitio?")) return;
+  localStorage.removeItem(LS_DRAFT); load(false);
+};
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + b.dataset.tab));
+});
+window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+load();
+</script>
+</body>
+</html>
