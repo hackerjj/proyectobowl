@@ -83,7 +83,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 </head>
 <body>
 <header>
-  <h1>Proyecto Bowl<button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.2</button></h1>
+  <h1>Proyecto Bowl<button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.3</button></h1>
   <p>Dark kitchen de bowls de avena, yogurt y fruta, más café. Calculadora de costos y análisis de arranque.</p>
 </header>
 <nav>
@@ -102,7 +102,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   <div class="card">
     <div class="bar">
       <button class="btn brand" id="btnSave">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7"/></svg>Guardar en el sitio</button>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-7h8v7"/></svg>Guardar ahora</button>
       <button class="btn alt" id="btnReload">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>Recargar del sitio</button>
       <button class="btn alt" id="btnToken">
@@ -226,6 +226,17 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
     <div class="cl-head"><h3 id="cl-title">Historial de cambios</h3><button class="cl-close" onclick="toggleChangelog(false)" aria-label="Cerrar">&times;</button></div>
     <div class="cl-body" id="changelog-body">
       <div class="cl-ver">
+        <h4>v1.3 <small>31 oct 2026 · 11:41</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-fix">FIX</span>Los cambios en insumos, recetas y parámetros se quedaban solo en el navegador y no llegaban al sitio si no se daba "Guardar". Al recargar con "Recargar del sitio", desde otro dispositivo o en modo privado, regresaban los valores iniciales.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span><strong>Autoguardado</strong>: cada cambio se guarda en el servidor un segundo después de dejar de escribir. La barra de estado muestra "Guardando..." y luego "Guardado automático HH:MM".</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Si editas sin haber entrado con tu PIN, la página te lo pide en el primer cambio y guarda lo pendiente en cuanto entras.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Si cierras la pestaña con un cambio a medio guardar, se envía en segundo plano.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>El botón "Guardar en el sitio" ahora dice "Guardar ahora" y queda como respaldo manual.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>Si alguien más guardó una versión nueva, el autoguardado se pausa y te pregunta antes de sobrescribir. Si falla la conexión, reintenta a los 15 segundos.</li>
+        </ul>
+      </div>
+      <div class="cl-ver">
         <h4>v1.2 <small>27 oct 2026 · 14:16</small></h4>
         <ul>
           <li><span class="cl-tag cl-add">NUEVO</span><strong>PIN personal</strong> para Jair y para Andrea. El sistema reconoce quién guarda por su PIN; ya no hay que escribir el nombre.</li>
@@ -336,32 +347,52 @@ async function load(useDraft = true) {
     b.innerHTML = `Tienes cambios sin guardar en este dispositivo (${esc(new Date(draft.at).toLocaleString("es-MX"))}). ` +
       `<button class="btn sm" id="dSave">Guardar en el sitio</button> <button class="btn alt sm" id="dDiscard">Descartar y usar lo del sitio</button>`;
     b.classList.add("on");
-    $("#dSave").onclick = save;
+    $("#dSave").onclick = () => save();
     $("#dDiscard").onclick = () => { localStorage.removeItem(LS_DRAFT); $("#bDraft").classList.remove("on"); load(false); };
   } else {
     D = server; dirty = false; $("#bDraft").classList.remove("on");
   }
   renderAll();
+  if (dirty && localStorage.getItem(LS_TOKEN) && !offline) scheduleSave(500);
 }
 
+// Autoguardado: cada cambio se guarda en el servidor ~1.2 s después de dejar de escribir.
+let saveTimer = null, saving = false, saveAgain = false, autoPaused = false, pinAsked = false, lastSavedAt = null;
 function markDirty() {
   dirty = true;
   localStorage.setItem(LS_DRAFT, JSON.stringify({at: new Date().toISOString(), data: D}));
   updateStatus();
+  scheduleSave();
+}
+function scheduleSave(delay = 1200) {
+  if (autoPaused || offline) return;
+  if (!localStorage.getItem(LS_TOKEN)) {
+    if (!pinAsked) { pinAsked = true; msg("Entra con tu PIN para que tus cambios se guarden en el sitio.", "warn", 0); openToken(); }
+    return;
+  }
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => save(false, true), delay);
 }
 
 function updateStatus() {
   const when = D.actualizado ? new Date(D.actualizado).toLocaleString("es-MX") : "sin fecha";
   $("#status").innerHTML = (dirty ? '<span class="neg">Cambios sin guardar</span> · ' : '<span class="pos">Al día</span> · ') +
+    (saving ? '<span class="status">Guardando...</span> · ' : "") +
+    (lastSavedAt && !dirty ? `Guardado automático ${esc(lastSavedAt.toLocaleTimeString("es-MX", {hour: "2-digit", minute: "2-digit"}))} · ` : "") +
     `Última versión del sitio: ${esc(when)} por ${esc(D.guardadoPor || "?")}` +
     (localStorage.getItem(LS_TOKEN) ? ` · Sesión: <b>${esc(localStorage.getItem(LS_NAME) || "?")}</b>` : " · Sin sesión (solo lectura)") + (offline ? ' · <span class="neg">sin conexión al servidor</span>' : "");
 }
 
-async function save(force = false) {
+async function save(force = false, auto = false) {
   const pin = localStorage.getItem(LS_TOKEN);
   if (!pin) { openToken(); return; }
+  if (offline) { msg("Sin conexión con el servidor. Tus cambios siguen en este navegador; dale Recargar en un momento.", "err", 0); return; }
+  if (saving) { saveAgain = true; return; }
+  clearTimeout(saveTimer);
+  saving = true; saveAgain = false;
+  const sentAt = localStorage.getItem(LS_DRAFT);
   const btn = $("#btnSave"); btn.disabled = true;
-  $("#status").textContent = "Guardando...";
+  updateStatus();
   try {
     const r = await apiFetch(API, {
       method: "PUT",
@@ -370,24 +401,40 @@ async function save(force = false) {
     });
     const j = await r.json().catch(() => ({}));
     if (r.status === 409) {
-      updateStatus();
+      saving = false; autoPaused = true; updateStatus();
       if (confirm(`Alguien guardó otra versión (${new Date(j.actualizado).toLocaleString("es-MX")} por ${j.guardadoPor}). ¿Sobrescribir con tus cambios? La versión de esa persona queda en el Historial.`)) {
-        btn.disabled = false; return save(true);
+        btn.disabled = false; autoPaused = false; return save(true);
       }
+      msg("Autoguardado en pausa: alguien más guardó. Dale Recargar para ver su versión, o Guardar en el sitio para sobrescribirla.", "warn", 0);
       return;
     }
-    if (r.status === 401) { updateStatus(); msg("PIN incorrecto.", "err", 6000); openToken(); return; }
+    if (r.status === 401) { saving = false; localStorage.removeItem(LS_TOKEN); updateStatus(); msg("PIN incorrecto. Vuelve a entrar.", "err", 6000); openToken(); return; }
     if (!r.ok) throw new Error(j.error || ("Error " + r.status));
     D.actualizado = j.actualizado; D.guardadoPor = j.guardadoPor;
-    serverStamp = j.actualizado; dirty = false; offline = false;
-    localStorage.removeItem(LS_DRAFT); $("#bDraft").classList.remove("on");
-    msg("Guardado. Cualquiera que abra el sitio verá estos precios.", "ok");
-    updateStatus();
+    serverStamp = j.actualizado; offline = false; lastSavedAt = new Date();
+    // Si hubo cambios mientras se guardaba, se quedan pendientes y se vuelve a guardar.
+    if (localStorage.getItem(LS_DRAFT) === sentAt) { dirty = false; localStorage.removeItem(LS_DRAFT); }
+    else saveAgain = true;
+    $("#bDraft").classList.remove("on"); $("#bMsg").classList.remove("on");
+    if (!auto) msg("Guardado. Cualquiera que abra el sitio verá estos precios.", "ok");
   } catch (e) {
-    updateStatus();
-    msg("No se pudo guardar: " + (e.name === "AbortError" ? "el servidor tardó demasiado, intenta de nuevo." : e.message) + " Tus cambios siguen guardados en este navegador.", "err", 0);
-  } finally { btn.disabled = false; }
+    msg("No se pudo guardar: " + (e.name === "AbortError" ? "el servidor tardó demasiado." : e.message) + " Tus cambios siguen en este navegador; se reintenta en 15 segundos.", "err", 0);
+    setTimeout(() => { if (dirty) scheduleSave(0); }, 15000);
+  } finally {
+    saving = false; btn.disabled = false; updateStatus();
+    if (saveAgain && dirty) scheduleSave(300);
+  }
 }
+
+// Si cierras la pestaña con cambios a medio guardar, se mandan en segundo plano.
+window.addEventListener("pagehide", () => {
+  const pin = localStorage.getItem(LS_TOKEN);
+  if (!dirty || !pin || offline || autoPaused) return;
+  try {
+    fetch(API, {method: "PUT", keepalive: true, headers: {"Content-Type": "application/json", "X-Bowl-Pin": pin},
+      body: JSON.stringify({data: D, baseStamp: serverStamp})});
+  } catch (e) {}
+});
 
 /* ---------- PIN ---------- */
 function openToken() {
@@ -406,7 +453,8 @@ $("#tokOk").onclick = async () => {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { $("#tokWho").textContent = j.error || "PIN incorrecto"; return; }
     localStorage.setItem(LS_TOKEN, t); localStorage.setItem(LS_NAME, j.nombre);
-    $("#dlgToken").close(); msg("Hola, " + j.nombre + ". Ya puedes guardar.", "ok"); updateStatus();
+    $("#dlgToken").close(); msg("Hola, " + j.nombre + ". Tus cambios se guardan solos.", "ok"); updateStatus();
+    if (dirty) scheduleSave(0);
   } catch (e) { $("#tokWho").textContent = "No se pudo conectar con el servidor. Intenta de nuevo."; }
   finally { btn.disabled = false; }
 };
@@ -610,13 +658,13 @@ $("#btnHist").onclick = openHist;
 $("#btnToken").onclick = openToken;
 $("#btnReload").onclick = () => {
   if (dirty && !confirm("Tienes cambios sin guardar. ¿Descartarlos y cargar lo del sitio?")) return;
-  localStorage.removeItem(LS_DRAFT); load(false);
+  localStorage.removeItem(LS_DRAFT); autoPaused = false; load(false);
 };
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
   document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + b.dataset.tab));
 });
-window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", e => { if (dirty && (!localStorage.getItem(LS_TOKEN) || saving || autoPaused || offline)) { e.preventDefault(); e.returnValue = ""; } });
 
 function toggleChangelog(on) { $("#changelog").classList.toggle("on", on); }
 document.addEventListener("keydown", e => { if (e.key === "Escape") toggleChangelog(false); });

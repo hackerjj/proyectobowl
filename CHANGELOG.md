@@ -3,6 +3,21 @@
 Historial de cambios de Proyecto Bowl (calculadora y backend). Lo más reciente arriba.
 La misma lista vive en el chip de versión del sitio (clic en "vX.Y" junto al título).
 
+## v1.3 — 31 oct 2026 · 11:41
+### Corregido
+- Los cambios en insumos, recetas y parámetros se quedaban solo como borrador del navegador
+  y no llegaban al servidor si no se daba "Guardar". Al usar "Recargar del sitio", abrir en
+  otro dispositivo o en modo privado, regresaban los valores iniciales.
+### Agregado
+- Autoguardado al servidor ~1.2 s después de cada cambio, con estado "Guardando..." y
+  "Guardado automático HH:MM".
+- Si no hay sesión, se pide el PIN en el primer cambio y se guarda lo pendiente al entrar.
+- Envío en segundo plano (`keepalive`) al cerrar la pestaña con cambios pendientes.
+### Cambiado
+- "Guardar en el sitio" pasa a "Guardar ahora" (respaldo manual).
+- Ante conflicto con otra versión, el autoguardado se pausa y pregunta; ante falla de red,
+  reintenta a los 15 s.
+
 ## v1.2 — 27 oct 2026 · 14:16
 ### Agregado
 - PIN personal para Jair y para Andrea. El sistema reconoce quién guarda por su PIN; ya no
