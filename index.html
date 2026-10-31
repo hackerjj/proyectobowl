@@ -3,18 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Proyecto Bowl · Calculadora y análisis</title>
+<title>Vaya Baya · Calculadora y análisis</title>
+<meta name="theme-color" content="#7A1F37">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="img/favicon-16.png">
+<link rel="icon" type="image/png" sizes="512x512" href="img/favicon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/apple-touch-icon.png">
 <style>
 :root{
-  --bg:#fffaf3; --card:#ffffff; --ink:#2b2420; --muted:#7a6e66; --line:#eadfd3;
-  --brand:#e8743b; --brand2:#7bb661; --berry:#b8336a; --ok:#2e8b57; --bad:#c0392b; --warn:#d68910;
+  --bg:#fbf8ec; --card:#ffffff; --ink:#2b2420; --muted:#7a6e66; --line:#eadfd3;
+  --brand:#7A1F37; --brand2:#7bb661; --berry:#7A1F37; --vainilla:#EDE3B2; --ok:#2e8b57; --bad:#c0392b; --warn:#d68910;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
 .ico{display:inline-block;width:1em;height:1em;vertical-align:-0.125em;margin-right:4px}
-header{background:linear-gradient(120deg,var(--brand),var(--berry));color:#fff;padding:22px 20px}
-header h1{margin:0;font-size:26px}
-header p{margin:4px 0 0;opacity:.92}
+header{background:#7A1F37;color:var(--vainilla);padding:14px 20px 18px}
+header h1{margin:0;font-size:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+header h1 img{height:64px;width:auto;display:block;margin-left:-14px}
+header p{margin:2px 0 0;opacity:.92;font-size:15px}
 nav{display:flex;gap:6px;padding:10px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;flex-wrap:wrap}
 nav button{border:1px solid var(--line);background:#fff;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:14px;color:var(--ink)}
 nav button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -60,8 +66,8 @@ table.m input.s{width:90px}
 dialog{border:1px solid var(--line);border-radius:14px;max-width:520px;width:92%;padding:18px}
 dialog::backdrop{background:rgba(0,0,0,.35)}
 .chk li{list-style:none;margin:4px 0}
-.ver-chip{font:600 12px/1 inherit;font-family:inherit;vertical-align:middle;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:10px;padding:4px 10px;margin-left:10px;cursor:pointer}
-.ver-chip:hover{background:#fff;color:var(--berry)}
+.ver-chip{font-size:12px;font-weight:600;line-height:1;font-family:inherit;vertical-align:middle;background:rgba(255,255,255,.18);color:var(--vainilla);border:1px solid var(--vainilla);border-radius:10px;padding:4px 10px;margin-left:10px;cursor:pointer}
+.ver-chip:hover{background:var(--vainilla);color:#7A1F37}
 .cl-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:50;align-items:center;justify-content:center;padding:16px}
 .cl-backdrop.on{display:flex}
 .cl-modal{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.25)}
@@ -78,13 +84,14 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .cl-add{background:#e9f6ee;color:var(--ok);border:1px solid var(--ok)}
 .cl-fix{background:#fff4e0;color:var(--warn);border:1px solid var(--warn)}
 .cl-chg{background:#fdeee6;color:var(--brand);border:1px solid var(--brand)}
-@media (max-width:600px){header h1{font-size:21px} main{padding:10px}}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:600px){header h1 img{height:48px} main{padding:10px}}
 </style>
 </head>
 <body>
 <header>
-  <h1>Proyecto Bowl<button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.3</button></h1>
-  <p>Dark kitchen de bowls de avena, yogurt y fruta, más café. Calculadora de costos y análisis de arranque.</p>
+  <h1><img src="img/logo-horizontal.png" alt="Vaya Baya" width="219" height="64"><span class="sr-only">Vaya Baya</span><button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.4</button></h1>
+  <p>Proyecto Bowl · Calculadora de costos y análisis de arranque.</p>
 </header>
 <nav>
   <button data-tab="calc" class="on">
@@ -225,6 +232,14 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   <div class="cl-modal">
     <div class="cl-head"><h3 id="cl-title">Historial de cambios</h3><button class="cl-close" onclick="toggleChangelog(false)" aria-label="Cerrar">&times;</button></div>
     <div class="cl-body" id="changelog-body">
+      <div class="cl-ver">
+        <h4>v1.4 <small>31 oct 2026 · 15:20</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-add">NUEVO</span><strong>Favicon de Vaya Baya</strong> (logo frambuesa, 2 líneas) en 16, 32 y 512 px, más ícono para iPhone al agregar el sitio a la pantalla de inicio.</li>
+          <li><span class="cl-tag cl-add">NUEVO</span>Logo horizontal de Vaya Baya en el encabezado.</li>
+          <li><span class="cl-tag cl-chg">CAMBIO</span>Colores de la marca: frambuesa #7A1F37 y vainilla #EDE3B2 en encabezado, botones y changelog. El título de la pestaña ahora dice "Vaya Baya".</li>
+        </ul>
+      </div>
       <div class="cl-ver">
         <h4>v1.3 <small>31 oct 2026 · 11:41</small></h4>
         <ul>

@@ -3,6 +3,15 @@
 Historial de cambios de Proyecto Bowl (calculadora y backend). Lo más reciente arriba.
 La misma lista vive en el chip de versión del sitio (clic en "vX.Y" junto al título).
 
+## v1.4 — 31 oct 2026 · 15:20
+### Agregado
+- Favicon de Vaya Baya (frambuesa, 2 líneas) en 16, 32 y 512 px y `apple-touch-icon` de
+  180 px. Archivos en `img/`, generados desde los logos de `andvelasco/vayabaya`.
+- Logo horizontal en el encabezado.
+### Cambiado
+- Colores de marca: frambuesa `#7A1F37` y vainilla `#EDE3B2`. Título de la pestaña
+  "Vaya Baya · Calculadora y análisis".
+
 ## v1.3 — 31 oct 2026 · 11:41
 ### Corregido
 - Los cambios en insumos, recetas y parámetros se quedaban solo como borrador del navegador
