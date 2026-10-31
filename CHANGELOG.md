@@ -3,6 +3,11 @@
 Historial de cambios de Proyecto Bowl (calculadora y backend). Lo más reciente arriba.
 La misma lista vive en el chip de versión del sitio (clic en "vX.Y" junto al título).
 
+## v1.5 — 31 oct 2026 · 16:05
+### Corregido
+- Logo y favicon recoloreados a los colores exactos de marca (`#7A1F37` y `#EDE3B2`); el PNG
+  original traía `#7B1934` y dejaba un recuadro visible en el encabezado.
+
 ## v1.4 — 31 oct 2026 · 15:20
 ### Agregado
 - Favicon de Vaya Baya (frambuesa, 2 líneas) en 16, 32 y 512 px y `apple-touch-icon` de

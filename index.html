@@ -90,7 +90,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 </head>
 <body>
 <header>
-  <h1><img src="img/logo-horizontal.png" alt="Vaya Baya" width="244" height="64"><span class="sr-only">Vaya Baya</span><button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.4</button></h1>
+  <h1><img src="img/logo-horizontal.png" alt="Vaya Baya" width="244" height="64"><span class="sr-only">Vaya Baya</span><button type="button" class="ver-chip" onclick="toggleChangelog(true)" title="Ver historial de cambios" aria-haspopup="dialog">v1.5</button></h1>
   <p>Proyecto Bowl · Calculadora de costos y análisis de arranque.</p>
 </header>
 <nav>
@@ -232,6 +232,12 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   <div class="cl-modal">
     <div class="cl-head"><h3 id="cl-title">Historial de cambios</h3><button class="cl-close" onclick="toggleChangelog(false)" aria-label="Cerrar">&times;</button></div>
     <div class="cl-body" id="changelog-body">
+      <div class="cl-ver">
+        <h4>v1.5 <small>31 oct 2026 · 16:05</small></h4>
+        <ul>
+          <li><span class="cl-tag cl-fix">FIX</span>El logo y el favicon traían un frambuesa ligeramente distinto (#7B1934) y se veía un recuadro en el encabezado. Ahora usan exactamente #7A1F37 y #EDE3B2.</li>
+        </ul>
+      </div>
       <div class="cl-ver">
         <h4>v1.4 <small>31 oct 2026 · 15:20</small></h4>
         <ul>
